@@ -25,6 +25,8 @@ data UnaryOp = UArith (Integer -> Integer)
 instance Show UnaryOp where
     show _ = "<op>"
 
+-- The data that can be bound to a top-level name
+-- Three data types are implemented: integers, booleans, and lambda abstractions.
 data Val = VInt Integer
          | VBool Bool
          | Lambda String TopExpr
@@ -34,7 +36,8 @@ instance Show Val where
     show (VBool bool) = show bool
     show (Lambda name expr) = '\\' : name ++ " -> " ++ show expr
 
-data Term = Var String Int
+-- The bottom-level of expressions
+data Term = Var String Int  -- Variables store their name and De Bruijn index.
           | App Term Term
           | Val Val
           | Parens TopExpr
@@ -47,6 +50,7 @@ instance Show Term where
     show (Parens expr) = '(' : show expr ++ ")"
     show (If condExpr thenExpr elseExpr) = "if " ++ show condExpr ++ " then " ++ show thenExpr ++ " else " ++ show elseExpr
 
+-- Expression tree
 data Expr a = Binary BinaryOp (Expr a) (Expr a)
             | Unary UnaryOp (Expr a)
             | Single a
@@ -58,9 +62,10 @@ instance Show a => Show (Expr a) where
 
 instance Functor Expr where
     fmap f (Binary op expr1 expr2) = Binary op (fmap f expr1) $ fmap f expr2
-    fmap f (Unary op e) = Unary op $ fmap f e
-    fmap f (Single x) = Single $ f x
+    fmap f (Unary op expr) = Unary op $ fmap f expr
+    fmap f (Single a) = Single $ f a
 
+-- Aliases for precedence levels
 type TopExpr = Or
 type Or = Expr And
 type And = Expr Equal
@@ -69,6 +74,7 @@ type Rel = Expr Add
 type Add = Expr Factor
 type Factor = Expr Term
 
+-- Top level declaration
 data Stmt = Assign String TopExpr
           | Expr TopExpr
 
@@ -90,6 +96,7 @@ pStringV = void . pString
 pParens :: Parser a -> Parser a
 pParens = between (pChar '(') (pChar ')')
 
+-- Parse just a name.
 pName' :: Parser String
 pName' = do
     c <- lower <|> char '_'
@@ -100,6 +107,7 @@ pName' = do
         else return name
     <?> "name"
 
+-- Parse a name or an infix binary operator.
 pName :: Parser String
 pName = pInfixOp <|> pName' <?> "name"
     where
@@ -138,12 +146,14 @@ pNotOp, pNegateOp :: Parser UnaryOp
 pNotOp    = ULogic <$> do { pCharV '!'; return not }
 pNegateOp = UArith <$> do { pCharV '-'; return negate }
 
+-- Parse an expression with no unary operator.
 pExpr :: Parser a -> Parser BinaryOp -> Parser (Expr a)
 pExpr p op = pBinary <|> pSingle <?> "expression"
     where
         pSingle = Single <$> p
         pBinary = pSingle `chainl1` (Binary <$> op)
 
+-- Parse an expression with a unary operator.
 pExpr' :: Parser a -> Parser BinaryOp -> Parser UnaryOp -> Parser (Expr a)
 pExpr' p pBinOp pUnOp = pUnary <|> pExpr p pBinOp <?> "expression"
     where
@@ -191,5 +201,6 @@ pStmt = try pAssign <|> (Expr <$> pTopExpr)
         fun (param : params) expr = wrap $ Lambda param (fun params expr)
         wrap = Single . Single . Single . Single . Single . Single . Val
 
+-- Run a parser on source code.
 parseSrc :: Parser a -> String -> Either ParseError a
 parseSrc p =  parse p "" . pack

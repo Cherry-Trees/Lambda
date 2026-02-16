@@ -11,6 +11,7 @@ import Control.Monad.State
 import Control.Monad.Except 
     (runExceptT)
 
+-- A symbol table with infix operators
 prelude :: SymTable
 prelude = M.fromList [ ("(||)", vOr)
                      , ("(&&)", vAnd)
@@ -45,29 +46,38 @@ prelude = M.fromList [ ("(||)", vOr)
         vNegate     = interpret "\\x -> -x"
         vNot        = interpret "\\x -> !x"
 
+        -- Interpret an expression.
         interpret src = case parseSrc pTopExpr src of
-            Right ast -> case runState (runExceptT $ eval ast) M.empty of
+            Right expr -> case runState (runExceptT $ eval expr) M.empty of
                 (Right val, _) -> val
-                _ -> VInt 0 -- This should never happen
-            _ -> VInt 0 -- Neither should this
+                _ -> VInt 0 -- This should never happen.
+            _ -> VInt 0     -- Neither should this.
 
+-- REPL
 main :: IO ()
-main = repl prelude
+main = do
+    putStrLn "Lambda REPL, :q to exit"
+    repl prelude
     where
         repl :: SymTable -> IO ()
         repl symTable = do
             putStr "> "
             hFlush stdout
             line <- getLine
-            if null line
-                then repl symTable
-                else case parseSrc pStmt line of
-                    Left err -> do
-                        print err
-                        repl symTable
-                    Right stmt -> do
-                        let (result, symTable') = runState (runExceptT $ eval stmt) symTable
-                        case result of
-                            Left err -> putStrLn err >> putChar '\n'
-                            Right val -> print val >> putChar '\n'
-                        repl symTable'
+            case line of
+                "" -> repl symTable
+                ":q" -> putStrLn "Leaving Lambda REPL."
+                src -> case parseSrc pStmt src of
+                        Left err -> do
+                            print err
+                            repl symTable
+                        Right stmt -> do
+                            let (result, symTable') = runState (runExceptT $ eval stmt) symTable
+                            case result of
+                                Left err -> do 
+                                    putStrLn err
+                                    putChar '\n'
+                                Right val -> do 
+                                    print val
+                                    putChar '\n'
+                            repl symTable'

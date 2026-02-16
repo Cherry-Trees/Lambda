@@ -14,24 +14,58 @@ import Control.Monad.State
 import Control.Monad.Except 
     (ExceptT, MonadError (throwError))
 
+-- Symbol table mapping variable names to values
 type SymTable = M.Map String Val
+
+-- The interpreter environment captures a symbol table state with exception capabilities.
 type Env = ExceptT String (State SymTable) 
 
 class AST a where
+
+    -- Evaluate an AST.
     eval :: a -> Env Val
-    shift :: String -> Int -> Int -> a -> a
-    subst :: String -> Int -> Val -> a -> a
 
-instance AST Stmt where
-    eval (Expr expr) = eval expr
-    eval (Assign name expr) = do
-        val <- eval expr
-        modify $ M.insert name val
-        return val
+    -- Increase the index of all variables matching the given name.
+    shift :: String 
+          -- ^ The variable name
+          -> Int 
+          -- ^ The amount to increase by
+          -> Int 
+          -- ^ The minimum index
+          -> a 
+          -- ^ The AST to shift
+          -> a
 
-    subst _ _ _ stmt = stmt
+    -- Substitute a value in place of a variable matching the given name and index.
+    subst :: String 
+          -- ^ The variable name
+          -> Int 
+          -- ^ The variable index
+          -> Val 
+          -- ^ The value to substitute in place of a variable
+          -> a 
+          -- ^ The AST to substitute into
+          -> a
 
-    shift _ _ _ stmt = stmt
+instance AST Val where
+    eval = return
+
+    subst name index new (Lambda name' expr) = Lambda name' expr'
+        where
+            index'
+                | name == name' = index + 1
+                | otherwise = index
+            shifted = shift name' 1 0 new
+            expr' = subst name index' shifted expr  
+    subst _ _ _ val = val
+    
+    shift name offset minIndex (Lambda name' expr) = Lambda name' expr'
+        where
+            minIndex'
+                | name == name' = minIndex + 1
+                | otherwise = minIndex
+            expr' = shift name offset minIndex' expr
+    shift _ _ _ val = val
 
 instance AST a => AST (Expr a) where
     eval (Binary op lExpr rExpr) = do
@@ -133,22 +167,13 @@ instance AST Term where
             shift' :: AST a => a -> a
             shift' = shift name offset minIndex
 
-instance AST Val where
-    eval = return
+instance AST Stmt where
+    eval (Expr expr) = eval expr
+    eval (Assign name expr) = do
+        val <- eval expr
+        modify $ M.insert name val
+        return val
 
-    subst name index new (Lambda name' expr) = Lambda name' expr'
-        where
-            index'
-                | name == name' = index + 1
-                | otherwise = index
-            shifted = shift name' 1 0 new
-            expr' = subst name index' shifted expr  
-    subst _ _ _ val = val
-    
-    shift name offset minIndex (Lambda name' expr) = Lambda name' expr'
-        where
-            minIndex'
-                | name == name' = minIndex + 1
-                | otherwise = minIndex
-            expr' = shift name offset minIndex' expr
-    shift _ _ _ val = val
+    subst _ _ _ stmt = stmt
+
+    shift _ _ _ stmt = stmt
