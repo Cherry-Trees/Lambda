@@ -74,10 +74,6 @@ main = do
                         Right stmt -> do
                             let (result, symTable') = runState (runExceptT $ eval stmt) symTable
                             case result of
-                                Left err -> do 
-                                    putStrLn err
-                                    putChar '\n'
-                                Right val -> do 
-                                    print val
-                                    putChar '\n'
+                                Left err -> putStrLn err
+                                Right val -> print val
                             repl symTable'
