@@ -2,7 +2,7 @@ module Parser where
 import Text.Parsec.Text 
     (Parser)
 import Text.Parsec.Char
-    ( spaces, char, string, lower, alphaNum, digit )
+    (spaces, char, string, lower, alphaNum, digit)
 import Text.Parsec 
     (many, try, parse, ParseError, (<?>), between, chainl1, many1)
 import Control.Monad 
@@ -26,14 +26,16 @@ instance Show UnaryOp where
     show _ = "<op>"
 
 -- The data that can be bound to a top-level name
--- Three data types are implemented: integers, booleans, and lambda abstractions.
+-- Three data types are implemented: integers, booleans, unit, and lambda abstractions.
 data Val = VInt Integer
          | VBool Bool
+         | VUnit
          | Lambda String TopExpr
 
 instance Show Val where
     show (VInt int) = show int
     show (VBool bool) = show bool
+    show VUnit = "Unit"
     show (Lambda name expr) = '\\' : name ++ " -> " ++ show expr
 
 -- The bottom-level of expressions

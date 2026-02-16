@@ -1,6 +1,6 @@
 module Main where
 import Parser 
-    (Val(VInt), pTopExpr, pStmt, parseSrc)
+    (Val(VInt, VUnit), pTopExpr, pStmt, parseSrc)
 import Interpreter 
     (AST(eval), SymTable)
 import qualified Data.Map as M
@@ -75,5 +75,6 @@ main = do
                             let (result, symTable') = runState (runExceptT $ eval stmt) symTable
                             case result of
                                 Left err -> putStrLn err
+                                Right VUnit -> repl symTable'
                                 Right val -> print val
                             repl symTable'

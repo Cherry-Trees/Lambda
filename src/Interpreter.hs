@@ -172,7 +172,7 @@ instance AST Stmt where
     eval (Assign name expr) = do
         val <- eval expr
         modify $ M.insert name val
-        return val
+        return VUnit
 
     subst _ _ _ stmt = stmt
 
