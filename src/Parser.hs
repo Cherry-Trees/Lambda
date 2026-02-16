@@ -98,9 +98,9 @@ pParens = between (pChar '(') (pChar ')')
 
 -- Parse just a name.
 pName' :: Parser String
-pName' = do
-    c <- lower <|> char '_'
-    cs <- pLex $ many $ alphaNum <|> char '_'
+pName' = pure <$> (pChar '_') <|> do
+    c <- lower
+    cs <- pLex $ many alphaNum
     let name = c : cs
     if name `elem` ["if", "then", "else"]
         then fail $ show name ++ "is reserved"
