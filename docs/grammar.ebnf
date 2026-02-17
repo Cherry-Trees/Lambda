@@ -9,17 +9,17 @@ expression      = expression , "||" , expression
 and             = and , "&&" , and
                 | equality ;
                 
-equality        = equality , ("==", "!=") , equality
+equality        = equality , ( "==" | "!=" ) , equality
                 | "!" , equality
                 | relation ;
 
-relation        = relation , ("<" , "<=" , ">" , ">=") , relation
+relation        = relation , ( "<" | "<=" | ">" | ">=" ) , relation
                 | addition ;
 
-addition        = addition , ("+" , "-") , addition
+addition        = addition , ( "+"  | "-" ) , addition
                 | multiplication ;
     
-multiplication  = multiplication , ("*" , "/" , "%") , multiplication
+multiplication  = multiplication , ( "*" | "/" | "%" ) , multiplication
                 | "-" , multiplication
                 | term ;
 
