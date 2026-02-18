@@ -1,7 +1,7 @@
 cabal-version:      3.0
 name:               Lambda
 version:            0.1.0.0
-license:            BSD-3-Clause
+license:            GPL-3.0-or-later
 license-file:       LICENSE
 author:             Alyssa Miles
 maintainer:         amiles723@proton.me
